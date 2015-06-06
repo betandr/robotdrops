@@ -14,6 +14,8 @@ require 'json'
 ]
 
 class Track
+    attr_accessor :title
+    attr_accessor :artist
     attr_accessor :tempo
     attr_accessor :bars
 end
@@ -66,6 +68,9 @@ def build_track(json_file)
     json = JSON.parse(analysis)
     track = Track.new
 
+    track.title = json['meta']['title']
+    track.artist = json['meta']['artist']
+
     track.tempo = json['track']['tempo'].to_i
     track.bars = json['bars']
 
@@ -76,12 +81,27 @@ end
 
 def load_drum_tracks(bpm)
     p "loading drum tracks for #{bpm} bpm"
-    system "curl -X GET 'http://donk.andr.io/kick?bpm=#{bpm}' > ./clips/kick.wav"
-    system "curl -X GET 'http://donk.andr.io/clap?bpm=#{bpm}' > ./clips/clap.wav"
-    system "curl -X GET 'http://donk.andr.io/donk?bpm=#{bpm}' > ./clips/1_7.wav"
+
+    kick_sample = "./samples/kick.wav"
+    if !File.exists?(kick_sample) then
+        system "curl -X GET 'http://donk.andr.io/kick?bpm=#{bpm}' > #{kick_sample}"
+    end
+
+    clap_sample = "./samples/clap.wav"
+    if !File.exists?(clap_sample) then
+        system "curl -X GET 'http://donk.andr.io/clap?bpm=#{bpm}' > #{clap_sample}"
+    end
+
+    donk_sample = "./samples/donk.wav"
+    if !File.exists?(donk_sample) then
+        system "curl -X GET 'http://donk.andr.io/donk?bpm=#{bpm}' > #{donk_sample}"
+    end
+
+    p "adding donk"
+    system "cp #{donk_sample} ./clips/1_7.wav"
 
     p "pre-mixing drum track"
-    system "sox -m ./clips/kick.wav ./clips/clap.wav ./clips/0_7.wav"
+    system "sox -m #{kick_sample} #{clap_sample} ./clips/0_7.wav"
 end
 
 def load_samples
@@ -106,7 +126,7 @@ def translate_index_to_grid_position(index)
 end
 
 def make_clips(track, outfile)
-    p "making clips from #{track}"
+    p "making clips from #{track.title} by #{track.artist}"
 
     max_number_of_clips = 56
     clip_count = 0
@@ -148,12 +168,14 @@ p "analyzing #{track_file} in mode [#{mode}]"
 if (mode == "live")
     basename = track_basename(track_file)
 
-    p "looking for #{basename}"
-    if File.exist?(".analysis/#{basename}") then
-        id = upload_track(track_file)
-    else
+    file = "analysis/#{basename}.json"
+
+    p "looking for #{file}"
+    if File.exists?(file) then
         p "already have that data so not going to bother Echonest"
         id = basename
+    else
+        id = upload_track(track_file)
     end
 
 elsif (mode == "offline")

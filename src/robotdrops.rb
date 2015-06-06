@@ -79,12 +79,17 @@ end
 
 # scene buttons
 interaction.response_to([:scene1, :scene2, :scene3, :scene4, :scene5, :scene6, :scene7, :scene8]) do |interaction, action|
-  interaction.device.change action[:type], :green => brightness(action)
+  interaction.device.change action[:type], :green => :down, :red => :down
 end
 
-# mixer button terminates interaction on button up
-interaction.response_to(:mixer, :up) do |interaction, action|
+# mixer button terminates interaction
+interaction.response_to(:mixer) do |interaction, action|
   interaction.stop
+end
+
+interaction.response_to(:up) do |interaction, action|
+    stop_other_audio
+    interaction.device.change action[:type], :green => brightness(action)
 end
 
 def button_has_clip?(row, column)
