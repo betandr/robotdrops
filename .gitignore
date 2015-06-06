@@ -10,6 +10,10 @@
 /tmp/
 
 /audio/*
+/clips/*
+/analysis/*
+/tracks/*
+/samples/*
 
 ## Specific to RubyMotion:
 .dat*

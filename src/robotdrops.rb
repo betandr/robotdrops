@@ -2,7 +2,7 @@ require 'launchpad'
 
 interaction = Launchpad::Interaction.new(:device_name => "Launchpad S")
 
-@home_path = "/Users/beth/Projects/robotdrops/audio"
+@home_path = "/Users/beth/Projects/robotdrops/clips"
 
 @clip_pids = Array.new
 @clips = Array.new
@@ -21,17 +21,33 @@ def get_audio_clips
 end
 
 def play(row, column)
-    stop_other_audio
+    if (!is_clip(row, column))
+        stop_other_audio
+    end
 
     clip = "#{@home_path}/#{row}_#{column}.wav"
 
     p "triggering #{clip}"
 
-    pid = fork{ exec "while :; do afplay #{clip}; done" }
+    # pid = fork{ exec "while :; do afplay #{clip}; done" }
 
-    # pid = fork{ exec 'afplay', clip }
+    pid = fork{ exec 'afplay', clip }
 
-    @clip_pids << pid
+    if (!is_clip(row, column))
+        @clip_pids << pid
+    end
+end
+
+def is_clip(row, column)
+    clip = false
+
+    if (column == 7)
+        if ((row == 5) || (row == 6) || (row == 7))
+            clip = true
+        end
+    end
+
+    clip
 end
 
 def stop_other_audio
