@@ -82,17 +82,17 @@ end
 def load_drum_tracks(bpm)
     p "loading drum tracks for #{bpm} bpm"
 
-    kick_sample = "./samples/kick.wav"
+    kick_sample = "./samples/kick_#{bpm}.wav"
     if !File.exists?(kick_sample) then
         system "curl -X GET 'http://donk.andr.io/kick?bpm=#{bpm}' > #{kick_sample}"
     end
 
-    clap_sample = "./samples/clap.wav"
+    clap_sample = "./samples/clap_#{bpm}.wav"
     if !File.exists?(clap_sample) then
         system "curl -X GET 'http://donk.andr.io/clap?bpm=#{bpm}' > #{clap_sample}"
     end
 
-    donk_sample = "./samples/donk.wav"
+    donk_sample = "./samples/donk_#{bpm}.wav"
     if !File.exists?(donk_sample) then
         system "curl -X GET 'http://donk.andr.io/donk?bpm=#{bpm}' > #{donk_sample}"
     end
@@ -106,9 +106,10 @@ end
 
 def load_samples
     p "loading samples"
-    system "cp ./samples/sample1.wav ./clips/5_7.wav"
-    system "cp ./samples/sample2.wav ./clips/6_7.wav"
-    system "cp ./samples/sample3.wav ./clips/7_7.wav"
+    system "cp ./samples/sample1.wav ./clips/4_7.wav"
+    system "cp ./samples/sample2.wav ./clips/5_7.wav"
+    system "cp ./samples/sample3.wav ./clips/6_7.wav"
+    system "cp ./samples/sample4.wav ./clips/7_7.wav"
 end
 
 def make_working_clip(file, outfile)
