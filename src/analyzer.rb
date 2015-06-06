@@ -20,7 +20,9 @@ end
 
 def upload_track(filename)
     p "uploading #{filename}"
-    tmpfile = "/tmp/#{File.basename(filename)}.json"
+    basename = track_basename(filename)
+
+    tmpfile = "/tmp/#{basename}.json"
 
     p "storing as #{tmpfile}"
 
@@ -32,12 +34,12 @@ def upload_track(filename)
 
     id = json['response']['track']['id']
 
-    download_audio_summary(id)
+    download_audio_summary(id, basename)
 
-    id
+    basename
 end
 
-def download_audio_summary(id)
+def download_audio_summary(id, basename)
     tmpfile = "/tmp/#{id}.json"
 
     system "curl -X GET 'http://developer.echonest.com/api/v4/track/profile?api_key=#{@api_key}&format=json&id=#{id}&bucket=audio_summary' > #{tmpfile}"
@@ -48,11 +50,11 @@ def download_audio_summary(id)
 
     analysis_url = json['response']['track']['audio_summary']['analysis_url']
 
-    download_analysis(id, analysis_url)
+    download_analysis(analysis_url, basename)
 end
 
-def download_analysis(id, url)
-    system "curl -vX GET '#{url}' > ./analysis/#{id}.json"
+def download_analysis(url, basename)
+    system "curl -vX GET '#{url}' > ./analysis/#{basename}.json"
 end
 
 def build_track(json_file)
@@ -74,18 +76,12 @@ end
 
 def load_drum_tracks(bpm)
     p "loading drum tracks for #{bpm} bpm"
-    system "curl -X GET 'http://donk.andr.io/kick?bpm=#{bpm}' > ./clips/0_7a.wav"
-    system "curl -X GET 'http://donk.andr.io/clap?bpm=#{bpm}' > ./clips/1_7a.wav"
-    system "curl -X GET 'http://donk.andr.io/donk?bpm=#{bpm}' > ./clips/2_7a.wav"
+    system "curl -X GET 'http://donk.andr.io/kick?bpm=#{bpm}' > ./clips/kick.wav"
+    system "curl -X GET 'http://donk.andr.io/clap?bpm=#{bpm}' > ./clips/clap.wav"
+    system "curl -X GET 'http://donk.andr.io/donk?bpm=#{bpm}' > ./clips/1_7.wav"
 
-    p "boosting audio"
-    system "sox -v 2.0 ./clips/0_7a.wav ./clips/0_7.wav"
-    system "sox -v 2.0 ./clips/1_7a.wav ./clips/1_7.wav"
-    system "sox -v 2.0 ./clips/2_7a.wav ./clips/2_7.wav"
-
-    p "pre-mixing drum tracks"
-    system "sox -m ./clips/0_7.wav ./clips/1_7.wav ./clips/3_7.wav"
-    system "sox -m ./clips/0_7.wav ./clips/1_7.wav ./clips/2_7.wav ./clips/4_7.wav"
+    p "pre-mixing drum track"
+    system "sox -m ./clips/kick.wav ./clips/clap.wav ./clips/0_7.wav"
 end
 
 def load_samples
@@ -100,6 +96,10 @@ def make_working_clip(file, outfile)
     system "sox #{file} ./clips/audio.wav"
 end
 
+def track_basename(filename)
+    File.basename(filename).gsub('.', '_')
+end
+
 # Please don't hate me for this! L:/
 def translate_index_to_grid_position(index)
     @grid_positions[index]
@@ -112,7 +112,7 @@ def make_clips(track, outfile)
     clip_count = 0
     track.bars.each do |bar|
         confidence = bar['confidence']
-        if (confidence > 0.65)
+        if (confidence > 0.50)
 
             if (clip_count < (max_number_of_clips + 1))
                 start_time = bar['start']
@@ -127,7 +127,11 @@ def make_clips(track, outfile)
         end
     end
 
-    p "found #{clip_count} clips but can only use #{max_number_of_clips}"
+    if (clip_count > (max_number_of_clips + 1))
+        p "found #{clip_count} clips but can only use #{max_number_of_clips}"
+    else
+        p "found #{clip_count} clips"
+    end
 end
 
 if (ARGV.length < 2) then
@@ -142,7 +146,16 @@ id = ""
 p "analyzing #{track_file} in mode [#{mode}]"
 
 if (mode == "live")
-    id = upload_track(track_file)
+    basename = track_basename(track_file)
+
+    p "looking for #{basename}"
+    if File.exist?(".analysis/#{basename}") then
+        id = upload_track(track_file)
+    else
+        p "already have that data so not going to bother Echonest"
+        id = basename
+    end
+
 elsif (mode == "offline")
     id = ARGV[2]
 else

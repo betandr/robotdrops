@@ -21,20 +21,15 @@ def get_audio_clips
 end
 
 def play(row, column)
-    if (!is_clip(row, column))
-        stop_other_audio
-    end
-
     clip = "#{@home_path}/#{row}_#{column}.wav"
-
     p "triggering #{clip}"
 
-    # pid = fork{ exec "while :; do afplay #{clip}; done" }
-
-    pid = fork{ exec 'afplay', clip }
-
     if (!is_clip(row, column))
+        stop_other_audio
+        pid = fork{ exec "play #{clip} repeat 99" }
         @clip_pids << pid
+    else
+        pid = fork{ exec "play #{clip}" }
     end
 end
 
