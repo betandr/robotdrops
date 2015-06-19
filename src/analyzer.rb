@@ -108,8 +108,16 @@ def build_track(id, basename)
     track.artist = json['meta']['artist']
 
     track.tempo = json['track']['tempo'].to_i
-    track.bars = json['bars']
 
+    bars = Array.new
+    count = 0
+
+    json['bars'].each do |bar|
+        bars << { "index" => count, "start" => bar['start'], "duration" => bar['duration'], "confidence" => bar['confidence'] }
+        count += 1
+    end
+
+    track.bars = bars
     file.close
 
     track
@@ -132,29 +140,28 @@ end
 def make_clips(track, outfile)
     p "making clips from #{track.title} by #{track.artist}"
 
-    max_number_of_clips = 64
+    max_number_of_clips = 63
+
+    confident_bars = track.bars.sort_by { |h| h[:confidence] }
+
+    bars = confident_bars[0..max_number_of_clips]
+
+    p "found #{bars.length} clips; using the #{max_number_of_clips} most confident"
+
     clip_count = 0
-    track.bars.each do |bar|
+    bars.each do |bar|
         confidence = bar['confidence']
-        if (confidence > 0.50)
 
-            if (clip_count < (max_number_of_clips + 1))
-                start_time = bar['start']
-                end_time = bar['duration'] + bar['start']
+        start_time = bar['start']
+        end_time = bar['duration'] + bar['start']
 
-                system "sox #{outfile} ./clips/#{
-                    translate_index_to_grid_position(clip_count)
-                }.wav trim #{start_time} =#{end_time}"
-            end
+        p "making clip: #{start_time}-#{end_time} at #{confidence} confidence"
 
-            clip_count += 1
-        end
-    end
+        system "sox #{outfile} ./clips/#{
+            translate_index_to_grid_position(clip_count)
+        }.wav trim #{start_time} =#{end_time}"
 
-    if (clip_count > (max_number_of_clips + 1))
-        p "found #{clip_count} clips but can only use #{max_number_of_clips}"
-    else
-        p "found #{clip_count} clips"
+        clip_count += 1
     end
 end
 
