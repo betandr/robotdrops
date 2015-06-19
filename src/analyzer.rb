@@ -49,46 +49,59 @@ end
 def download_audio_summary(id, basename)
     tmpfile = "/tmp/#{id}.json"
 
-    system "curl -X GET 'http://developer.echonest.com/api/v4/track/profile?api_key=#{@api_key}&format=json&id=#{id}&bucket=audio_summary' > #{tmpfile}"
+    system "curl --silent -X GET 'http://developer.echonest.com/api/v4/track/profile?api_key=#{@api_key}&format=json&id=#{id}&bucket=audio_summary' > #{tmpfile}"
 
-    file = File.open(tmpfile, "rb")
+    download_analysis(tmpfile, basename)
+end
+
+def download_analysis(filename, basename)
+    file = File.open(filename, "rb")
     analysis = file.read
     json = JSON.parse(analysis)
 
+    p "getting analysis url from #{filename}"
+
     analysis_url = json['response']['track']['audio_summary']['analysis_url']
 
-    download_analysis(analysis_url, basename)
-end
-
-def download_analysis(url, basename)
-    system "curl -vX GET '#{url}' > ./analysis/#{basename}.json"
+    p "requesting analysis..."
+    system "curl --silent -X GET '#{analysis_url}' > ./analysis/#{basename}.json"
+    p "analysis saved to analysis/#{basename}.json"
 end
 
 def build_track(id, basename)
 
-    json_file = "analysis/#{id}.json"
+    json_file = "analysis/#{basename}.json"
 
-    p "building track from #{json_file}"
+    p "building track for #{id} from #{json_file}"
 
-    file = File.open(json_file, "rb")
-    analysis = file.read
+    json = "{}"
+
+    loopcount = 2
 
     while(true) do
 
-        if (analysis.include? "NoSuchKey") then
-            system "rm #{json_file}"
+        file = File.open(json_file, "rb")
+        analysis = file.read
 
+        if (analysis.include? "NoSuchKey") then
             p "waiting for analysis from Echonest..."
             sleep 3
 
-            download_audio_summary(id, basename)
+            p "making request #{loopcount} to Echonest"
+            loopcount += 1
+
+            tmpfile = File.open("/tmp/#{id}.json", "rb")
+            track_id = JSON.parse(tmpfile.read)['response']['track']['id']
+
+            system "rm #{json_file}"
+            download_analysis("/tmp/#{track_id}.json", basename)
         else
-            p "found it"
+            p "analysis loaded"
+            json = JSON.parse(analysis)
             break
         end
     end
 
-    json = JSON.parse(analysis)
     track = Track.new
 
     track.title = json['meta']['title']
@@ -103,7 +116,7 @@ def build_track(id, basename)
 end
 
 def make_working_clip(file, outfile)
-    p "creating wave"
+    p "creating working wave clip"
     system "sox #{file} ./clips/audio.wav"
 end
 
@@ -178,11 +191,10 @@ else
     p "unknown mode #{mode}"
 end
 
-p "building track for id #{id}"
-
-track = build_track(id, basename)
-
 system 'rm ./clips/*.wav'
+
+p "requesting id #{id}"
+track = build_track(id, basename)
 
 outfile = "./clips/audio.wav"
 make_working_clip(track_file, outfile)
