@@ -79,39 +79,6 @@ def build_track(json_file)
     track
 end
 
-def load_drum_tracks(bpm)
-    p "loading drum tracks for #{bpm} bpm"
-
-    kick_sample = "./samples/kick_#{bpm}.wav"
-    if !File.exists?(kick_sample) then
-        system "curl -X GET 'http://donk.andr.io/kick?bpm=#{bpm}' > #{kick_sample}"
-    end
-
-    clap_sample = "./samples/clap_#{bpm}.wav"
-    if !File.exists?(clap_sample) then
-        system "curl -X GET 'http://donk.andr.io/clap?bpm=#{bpm}' > #{clap_sample}"
-    end
-
-    donk_sample = "./samples/donk_#{bpm}.wav"
-    if !File.exists?(donk_sample) then
-        system "curl -X GET 'http://donk.andr.io/donk?bpm=#{bpm}' > #{donk_sample}"
-    end
-
-    p "adding donk"
-    system "cp #{donk_sample} ./clips/1_7.wav"
-
-    p "pre-mixing drum track"
-    system "sox -m #{kick_sample} #{clap_sample} ./clips/0_7.wav"
-end
-
-def load_samples
-    p "loading samples"
-    system "cp ./samples/sample1.wav ./clips/4_7.wav"
-    system "cp ./samples/sample2.wav ./clips/5_7.wav"
-    system "cp ./samples/sample3.wav ./clips/6_7.wav"
-    system "cp ./samples/sample4.wav ./clips/7_7.wav"
-end
-
 def make_working_clip(file, outfile)
     p "creating wave"
     system "sox #{file} ./clips/audio.wav"
@@ -129,7 +96,7 @@ end
 def make_clips(track, outfile)
     p "making clips from #{track.title} by #{track.artist}"
 
-    max_number_of_clips = 56
+    max_number_of_clips = 64
     clip_count = 0
     track.bars.each do |bar|
         confidence = bar['confidence']
@@ -190,9 +157,6 @@ p "building track for id #{id}"
 track = build_track("analysis/#{id}.json")
 
 system 'rm ./clips/*.wav'
-
-load_drum_tracks(track.tempo)
-load_samples
 
 outfile = "./clips/audio.wav"
 make_working_clip(track_file, outfile)
