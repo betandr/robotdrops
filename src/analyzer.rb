@@ -1,6 +1,7 @@
 require 'json'
+require 'yaml'
 
-@api_key = 'O098HQYYTKMBTOYWK'
+@api_key = ''
 
 @grid_positions = [
     "0_0", "1_0", "2_0", "3_0", "4_0", "5_0", "6_0", "7_0",
@@ -20,6 +21,10 @@ class Track
     attr_accessor :bars
 end
 
+def download_track_analysis(filename, tmpfile)
+    system "curl -F \"api_key=#{@api_key}\" -F \"filetype=mp3\" -F \"track=@#{filename}\" \"http://developer.echonest.com/api/v4/track/upload\" > #{tmpfile}"
+end
+
 def upload_track(filename)
     p "uploading #{filename}"
     basename = track_basename(filename)
@@ -28,10 +33,10 @@ def upload_track(filename)
 
     p "storing as #{tmpfile}"
 
-    system "curl -F \"api_key=#{@api_key}\" -F \"filetype=mp3\" -F \"track=@#{filename}\" \"http://developer.echonest.com/api/v4/track/upload\" > #{tmpfile}"
-
+    download_track_analysis(filename, tmpfile)
     file = File.open(tmpfile, "rb")
     analysis = file.read
+
     json = JSON.parse(analysis)
 
     id = json['response']['track']['id']
@@ -59,11 +64,27 @@ def download_analysis(url, basename)
     system "curl -vX GET '#{url}' > ./analysis/#{basename}.json"
 end
 
-def build_track(json_file)
+def build_track(json_file, basename, track_file)
     p "building track from #{json_file}"
 
     file = File.open(json_file, "rb")
     analysis = file.read
+
+    while(true) do
+
+        if (analysis.include? "NoSuchKey") then
+            # system "rm #{json_file}"
+
+            p "waiting for analysis from Echonest..."
+            sleep 1
+
+            # tmpfile = "/tmp/#{basename}.json"
+            # download_track_analysis(track_file, tmpfile)
+        else
+            p "found it"
+            break
+        end
+    end
 
     json = JSON.parse(analysis)
     track = Track.new
@@ -122,6 +143,9 @@ def make_clips(track, outfile)
     end
 end
 
+config = YAML::load_file("config/config.yaml")
+@api_key = config['api_key']
+
 if (ARGV.length < 2) then
     p "usage bundle exec ruby analyzer.rb <filename> <live|offline> "
     exit(1)
@@ -140,7 +164,7 @@ if (mode == "live")
 
     p "looking for #{file}"
     if File.exists?(file) then
-        p "already have that data so not going to bother Echonest"
+        p "already have that data so not requesting from Echonest"
         id = basename
     else
         id = upload_track(track_file)
@@ -154,7 +178,7 @@ end
 
 p "building track for id #{id}"
 
-track = build_track("analysis/#{id}.json")
+track = build_track("analysis/#{id}.json", basename, track_file)
 
 system 'rm ./clips/*.wav'
 
