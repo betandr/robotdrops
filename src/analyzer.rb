@@ -64,7 +64,10 @@ def download_analysis(url, basename)
     system "curl -vX GET '#{url}' > ./analysis/#{basename}.json"
 end
 
-def build_track(json_file, basename, track_file)
+def build_track(id, basename)
+
+    json_file = "analysis/#{id}.json"
+
     p "building track from #{json_file}"
 
     file = File.open(json_file, "rb")
@@ -73,13 +76,12 @@ def build_track(json_file, basename, track_file)
     while(true) do
 
         if (analysis.include? "NoSuchKey") then
-            # system "rm #{json_file}"
+            system "rm #{json_file}"
 
             p "waiting for analysis from Echonest..."
-            sleep 1
+            sleep 3
 
-            # tmpfile = "/tmp/#{basename}.json"
-            # download_track_analysis(track_file, tmpfile)
+            download_audio_summary(id, basename)
         else
             p "found it"
             break
@@ -178,7 +180,7 @@ end
 
 p "building track for id #{id}"
 
-track = build_track("analysis/#{id}.json", basename, track_file)
+track = build_track(id, basename)
 
 system 'rm ./clips/*.wav'
 
