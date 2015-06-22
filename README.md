@@ -8,4 +8,4 @@ _* The needle drop is a technique used in hip hop deejaying. The DJ sets a recor
 
 More detail at: [http://bet.andr.io/robotdrops](http://bet.andr.io/robotdrops)
 
-![Robot Drops](http://bet.andr.io/system/comfy/cms/files/files/000/000/074/original/robotdrops1.jpg)
+![Robot Drops](https://lh4.googleusercontent.com/-dZ5VZAuusyQ/VX17-QjwUVI/AAAAAAAAass/Zi4lBjjH7nw/w781-h585-no/IMG_20150614_132045.jpg)
