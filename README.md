@@ -6,4 +6,6 @@ Robot Drops also provides some drum loops at the same BPM as the MP3 it has chop
 
 _* The needle drop is a technique used in hip hop deejaying. The DJ sets a record spinning, then drops the stylus on the turntable at the exact point where he wants playback to begin without previously cuing up the record._
 
+More detail at: [http://bet.andr.io/robotdrops](http://bet.andr.io/robotdrops)
+
 ![Robot Drops](http://bet.andr.io/system/comfy/cms/files/files/000/000/074/original/robotdrops1.jpg)
